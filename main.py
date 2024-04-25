@@ -6,13 +6,22 @@ from telethon import TelegramClient, events
 # Konfiguration API Key
 openai.api_key = API_KEY
 print(API_KEY)
+
+
 client = TelegramClient('telegaBot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+
 
 async def send_input_and_get_response(prompt, conversation):
     message = await conversation.send_message(prompt)
+    task_wait = asyncio.create_task(conversation.wait_event(events.CallbackQuery()))
+    task_respond = asyncio.create_task(conversation.get_response())
+
     done, _ = await asyncio.wait(
-        {conversation.wait_for_response(events.CallbackQuery()), conversation.get_response()}, 
+        {
+            task_wait, task_respond
+        },
         return_when=asyncio.FIRST_COMPLETED)
+    
     response = done.pop().result()
     #Nachricht wird gelöscht sobald eine Antwort erhalten wurde
     await message.delete()
@@ -36,11 +45,11 @@ async def respond(event):
                 #User beendet Konversation
                 if user_input is None:
                     prompt ="Conversation ended. Type /start to start a new one"
-                    await client.respond(prompt)
+                    await client.send_message(prompt)
                     break
                 else:
-                    prompt = "I'm thinking about the response..."
-                    thinking_message = await client.respond(prompt)
+                    #prompt = "I'm thinking about the response..."
+                    #thinking_message = await client.send_message(prompt)
 
                     history.append({"role": "user", "content": user_input})
 
@@ -54,11 +63,11 @@ async def respond(event):
                     response = chat_completion.choices[0].message.content
                     history.append({"role": "bot", "content": response})
                     await thinking_message.delete()
-                    await client.respond(response, parse_mode='Markdown')
+                    await client.send_message(response, parse_mode='Markdown')
 
     #Zeitüberschreitungsfehler
     except asyncio.TimeoutError:
-        await event.respond("Timeout: Conversation ended.")
+        await event.send_message("Timeout: Conversation ended.")
     #Andere Ausnahmen
     except Exception as e:
         print(f"Error: {e}")
