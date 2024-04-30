@@ -1,9 +1,6 @@
-import os
 import json
-
-import time
 from dotenv import load_dotenv
-from settings import API_KEY, API_ID, API_HASH, BOT_TOKEN, bot_name, model_engine
+from settings import API_KEY, API_ID, API_HASH, BOT_TOKEN, model_engine
 from telegram import (
     ReplyKeyboardMarkup,
     Update,
@@ -21,9 +18,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=API_KEY)
 print(API_KEY)
-(ENTRY_STATE, 
-QUESTION_STATE,
-) = range(2)
+(ENTRY_STATE, QUESTION_STATE,) = range(2)
 
 class Bot:
     def get_response(self, question):
@@ -87,14 +82,13 @@ async def pre_query_response_handler(update: Update, context: ContextTypes):
             response, reply_markup=reply_markup,
         )
         return QUESTION_STATE
+    # Fehlermeldung 
     except Exception as e:
-        # Fehlermeldung an den Benutzer senden
         error_message = "Sorry, something went wrong."
         await update.message.reply_text(error_message)
-        # Fehler protokollieren
         print(f"Error: {e}")
 
-
+#Bot starten
 if __name__ == "__main__":
     load_dotenv()
     application = Application.builder().token(BOT_TOKEN).read_timeout(100).get_updates_read_timeout(100).build()
